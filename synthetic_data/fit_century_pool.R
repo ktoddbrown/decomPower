@@ -9,4 +9,4 @@ data$eCO2 <- data$evolved_co2_mat;
 library(rstan);
 rstan_options(auto_write = TRUE);
 options(mc.cores = parallel::detectCores());
-fit <- stan("century_pool.stan", data=data, iter=500, seed=1234);
+fit <- stan("century_pool.stan", data=data, iter=1000, seed=1234);
