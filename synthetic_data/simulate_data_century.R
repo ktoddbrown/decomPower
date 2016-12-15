@@ -1,5 +1,8 @@
-simulate_data_century <- function(ts, init_co2, num_rep) {
+simulate_data_century <- function(t_meas, t_cap, init_C, num_rep) {
 library(deSolve)
+library(gtools)
+library(VGAM)  
+  
 genDerivs <-function(t, Ct, params) {
   # General diff eq model: dC_dt = I(t) + A(t)*C(t)
   # INPUTS:
@@ -9,46 +12,51 @@ genDerivs <-function(t, Ct, params) {
   dC_dt = params$I + params$A %*% Ct;
   return(list(dC_dt));
 }
-calc_co2_flux <- function(co2_t, A) {
-  r1 <- sum(A[,1]);
-  r2 <- sum(A[,2]);
-  r3 <- sum(A[,3]);
-  co_flux <- -r1 * co2_t[, 1] - r2 * co2_t[, 2] - r3 * co2_t[, 3];
-  return(co_flux);
-}
+
 # Generating parameters: 
 m <- 3
-C0 <- matrix(init_co2, nrow=m);
+C_t0 <- matrix(init_C, nrow=m);
 turnover <- c(1.5, 25, 1000);
 K <- 1/turnover;
 I <- rep(0, m);
-N_t <- length(ts);
-co2_flux_mat <- matrix(NA, nrow = N_t, ncol = num_rep);
-evolved_co2_mat <- matrix(NA, nrow = N_t, ncol = num_rep);
+N_t <- length(t_meas);
+CO2_flux_mat <- matrix(NA, nrow = N_t, ncol = num_rep);
 for (rep in 1:num_rep) {
   Alpha <- matrix(0, m, m);
+  Alpha_rep <- matrix(0, m, m);
   Alpha[2, 1] = 0.5;
   Alpha[3, 1] = 0.004;
   Alpha[1, 2] = 0.42;
   Alpha[3, 2] = 0.03;
   Alpha[1, 3] = 0.45;
-  Alpha <- Alpha * matrix(rnorm(9, 1, 0.05), nrow=3); 
+  Alpha[1, 1] = 1 - Alpha[2, 1] - Alpha[3, 1];
+  Alpha[2, 2] = 1 - Alpha[1, 2] - Alpha[3, 2];
+  Alpha[3, 3] = 1 - Alpha[1, 3] - Alpha[2, 3];
+  kappa <- c(100,100,100);
+  Alpha_rep[,1] <-  rdirichlet(1, Alpha[,1] * kappa[1]);
+  Alpha_rep[,2] <-  rdirichlet(1, Alpha[,2] * kappa[2]);
+  Alpha_rep[,3] <-  rdirichlet(1, Alpha[,3] * kappa[3]);
+  Alpha[1, 1] <- 0;
+  Alpha[2, 2] <- 0;
+  Alpha[3, 3] <- 0;
   A <- Alpha * matrix(rep(K, m), nrow = m, byrow = TRUE) - diag(K);
   params <- list(I=I, A=A);
   t0 <- 0;
   # Solving the ODE system for given parameters:
-  ode_data<-ode(y = C0, func = genDerivs,
-          times = c(t0,ts), parms = params);
+  meas_data<-ode(y = C_t0, func = genDerivs,
+          times = c(t0,t_meas), parms = params);
+  cap_data<-ode(y = C_t0, func = genDerivs,
+                 times = c(t0,t_cap), parms = params);
   # Computing evolved CO2 and plotting it:
-  total_co2_t0 = sum(ode_data[1,2:(m+1)]);
-  co2_t <- ode_data[2:nrow(ode_data),2:(m+1)];
-  evolved_co2 <- total_co2_t0 - rowSums(co2_t);
-  evolved_co2_mat[,rep] <- exp(log(evolved_co2) + rnorm(length(evolved_co2),0,.1));
-  co2_flux <- calc_co2_flux(co2_t, A);
-  co2_flux_mat[,rep] <- co2_flux + rnorm(length(co2_flux),0,1);
+  totalC_t0 = sum(meas_data[1,2:(m+1)]);
+  CO2_t_meas <- totalC_t0 - rowSums(meas_data[2:nrow(meas_data), 2:(m+1)]);
+  CO2_t_cap <- totalC_t0 - rowSums(cap_data[2:nrow(cap_data),2:(m+1)]);
+  CO2_flux <- (CO2_t_meas - CO2_t_cap)/(t_meas-t_cap); 
+  CO2_flux_mat[,rep] <- exp(log(CO2_flux) + rnorm(length(CO2_flux),0,.1));
 }
-simulated_data <- list(N_t = N_t, ts = ts, num_rep = num_rep, totalC_t0 = total_co2_t0,
-                       t0=t0,evolved_co2_mat=evolved_co2_mat, co2_flux_mat=co2_flux_mat);
+simulated_data <- list(N_t = N_t, t_meas = t_meas, t_cap = t_cap, 
+                       num_rep = num_rep, totalC_t0 = totalC_t0,
+                       t0=t0, CO2_flux_mat=CO2_flux_mat);
 return(simulated_data);
 }
 

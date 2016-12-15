@@ -45,15 +45,15 @@ functions {
    * @param x_i integer data (empty) 
    * @return evolved CO2 for times ts 
    */ 
-  vector evolved_CO2(int N_t, real t0, real[] ts, 
+  vector evolved_CO2(int N_t, real t0, vector ts, 
                      vector gamma, real totalC_t0, 
                      vector k, real a21, real a31, real a12, 
                      real a32, real a13, real[] x_r, int[] x_i) { 
  
     real C_t0[3];               // initial state 
     real theta[8];              // ODE parameters 
-    real C_hat[N_t,3];          // predicted pool content 
-    vector[N_t] eCO2_hat; 
+    real C_t[N_t,3];          // predicted pool content 
+    vector[N_t] CO2_t; 
  
     C_t0 = to_array_1d(gamma*totalC_t0);
     theta[1:3] = to_array_1d(k);
@@ -62,19 +62,20 @@ functions {
     theta[6] = a12;
     theta[7] = a32;
     theta[8] = a13;
-    C_hat = integrate_ode_bdf(century_model,  
-                           C_t0, t0, ts, theta, x_r, x_i); 
+    C_t = integrate_ode_bdf(century_model,  
+                           C_t0, t0, to_array_1d(ts), theta, x_r, x_i); 
     for (t in 1:N_t) 
-      eCO2_hat[t] = totalC_t0 - sum(C_hat[t]); 
-    return eCO2_hat; 
+      CO2_t[t] = totalC_t0 - sum(C_t[t]); 
+    return CO2_t; 
   } 
 } 
 data { 
   real<lower=0> totalC_t0;     // initial total carbon 
   real t0;                     // initial time 
   int<lower=0> N_t;            // number of measurement times 
-  real<lower=t0> ts[N_t];      // measurement times 
-  real<lower=0> eCO2[N_t];     // measured cumulative evolved carbon 
+  vector<lower=t0>[N_t] t_meas;  // measurement times 
+  vector<lower=t0>[N_t] t_cap;  // cap times 
+  vector<lower=0>[N_t] CO2_flux;     // measured cumulative evolved carbon 
 } 
 transformed data { 
   real x_r[0];                 // no real data for ODE system 
@@ -92,12 +93,18 @@ parameters {
   real<lower=0> sigma_obs;
 } 
 transformed parameters { 
-  vector[N_t] eCO2_hat; 
+  vector[N_t] CO2_meas;
+  vector[N_t] CO2_cap;
+  vector[N_t] CO2_flux_hat;
   vector<lower=0>[3] k;
   k = 1 ./ turnover;
-  eCO2_hat = evolved_CO2(N_t, t0, ts, gamma, totalC_t0, 
+  CO2_meas = evolved_CO2(N_t, t0, t_meas, gamma, totalC_t0, 
                           k, a21, a31, a12, a32, a13, 
                           x_r, x_i); 
+  CO2_cap = evolved_CO2(N_t, t0, t_cap, gamma, totalC_t0, 
+                          k, a21, a31, a12, a32, a13, 
+                          x_r, x_i);
+  CO2_flux_hat = (CO2_meas - CO2_cap)./(t_meas - t_cap);
 } 
 model { 
   // priors 
@@ -108,5 +115,6 @@ model {
   sigma_obs ~ cauchy(0,1);
  
   // likelihood     
-  eCO2 ~ lognormal(log(eCO2_hat), sigma_obs);   // lognormal error 
+  CO2_flux ~ lognormal(log(CO2_flux_hat), sigma_obs);   // lognormal error 
 } 
+
