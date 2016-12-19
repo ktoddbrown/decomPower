@@ -6,7 +6,7 @@ t_cap <- c(seq(from=0.5/360, to=6.5/360, by=1/360), seq(from=10.5/360, to=24.5/3
            seq(from=45/360, to=345/360, by=30/360));
 init_C <- 1E3*c(.1, .1, .8);
 data <- simulate_data_century(t_meas, t_cap, init_C, num_rep);
-data$CO2_flux <- data$CO2_flux_mat[,1];
+data$CO2_flux <- data$CO2_flux[,1];
 library(rstan);
 rstan_options(auto_write = TRUE);
 options(mc.cores = parallel::detectCores());

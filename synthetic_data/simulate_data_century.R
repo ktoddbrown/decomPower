@@ -56,7 +56,7 @@ for (rep in 1:num_rep) {
 }
 simulated_data <- list(N_t = N_t, t_meas = t_meas, t_cap = t_cap, 
                        num_rep = num_rep, totalC_t0 = totalC_t0,
-                       t0=t0, CO2_flux_mat=CO2_flux_mat);
+                       t0=t0, CO2_flux=CO2_flux_mat);
 return(simulated_data);
 }
 
