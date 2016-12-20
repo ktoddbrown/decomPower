@@ -10,4 +10,4 @@ data <- simulate_data_century(t_meas, t_cap, init_C, num_rep);
 library(rstan);
 rstan_options(auto_write = TRUE);
 options(mc.cores = parallel::detectCores());
-fit <- stan("century_hier2.stan", data=data, iter=300, seed=1234);
+fit <- stan("century_hier.stan", data=data, iter=50, seed=1234);

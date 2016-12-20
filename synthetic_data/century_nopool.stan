@@ -1,5 +1,5 @@
+// Fitting the century model with no pooling
 functions { 
-  
   /** 
   * ODE system for the Century model with no input fluxes. 
   * @param t time at which derivatives are evaluated. 

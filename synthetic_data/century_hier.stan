@@ -1,5 +1,5 @@
+// Fitting the century model with partial pooling
 functions { 
-  
   /** 
   * ODE system for the Century model with no input fluxes. 
   * @param t time at which derivatives are evaluated. 
@@ -62,7 +62,7 @@ functions {
       theta[6] = a12;
       theta[7] = a32;
       theta[8] = a13;
-      C_t = integrate_ode_bdf(century_model,  
+      C_t = integrate_ode_rk45(century_model,  
                               C_t0, t0, to_array_1d(ts), theta, x_r, x_i); 
       for (t in 1:N_t) 
         CO2_t[t] = totalC_t0 - sum(C_t[t]); 
@@ -108,10 +108,10 @@ transformed parameters {
   k = 1 ./ turnover;
   // transfer rates are different for each replication:
   for (i in 1:num_rep) {
-    a21[i] = A1[i, 1];
-    a31[i] = A1[i, 2];
+    a21[i] = A1[i, 2];
+    a31[i] = A1[i, 3];
     a12[i] = A2[i, 1];
-    a32[i] = A2[i, 2];
+    a32[i] = A2[i, 3];
     a13[i] = A3[i, 1];
   }
   for (i in 1:num_rep) {
@@ -131,6 +131,7 @@ model {
   turnover[3] ~ normal(1000, 100 * sigma[3]);
   sigma ~ cauchy(0,1); 
   sigma_obs ~ cauchy(0,1);
+  kappa ~ normal(100,50);
   for (i in 1:num_rep) {
     A1[i] ~ dirichlet(kappa*A1_g);
     A2[i] ~ dirichlet(kappa*A2_g);
