@@ -62,7 +62,7 @@ functions {
       theta[6] = a12;
       theta[7] = a32;
       theta[8] = a13;
-      C_t = integrate_ode_rk45(century_model,  
+      C_t = integrate_ode_bdf(century_model,  
                               C_t0, t0, to_array_1d(ts), theta, x_r, x_i); 
       for (t in 1:N_t) 
         CO2_t[t] = totalC_t0 - sum(C_t[t]); 
