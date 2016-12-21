@@ -5,6 +5,7 @@ simulate_data_century <- function(t_meas, t_cap, init_C, num_rep) {
 #   init_C:  initial pool contents
 #   num_rep: number of replications
 library(deSolve)
+library(gtools)
 genDerivs <-function(t, Ct, params) {
   # General diff eq model: dC_dt = I(t) + A(t)*C(t)
   # INPUTS:
