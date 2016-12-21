@@ -387,7 +387,7 @@ transformed parameter {
 }
 model {
   ...
-  kappa ~ pareto(1,1.5);
+  kappa ~ normal(100,50);
   for (i in 1:num_rep) {
     A1[i] ~ dirichlet(kappa*A1_g);
     A2[i] ~ dirichlet(kappa*A2_g);
