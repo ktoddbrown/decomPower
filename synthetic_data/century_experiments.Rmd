@@ -90,6 +90,7 @@ simulate_data_century <- function(t_meas, t_cap, init_C, num_rep) {
 #   init_C:  initial pool contents
 #   num_rep: number of replications
 library(deSolve)
+library(gtools)
 genDerivs <-function(t, Ct, params) {
   # General diff eq model: dC_dt = I(t) + A(t)*C(t)
   # INPUTS:
@@ -408,9 +409,135 @@ init_C <- 1E3*c(.1, .1, .8);
 data <- simulate_data_century(t_meas, t_cap, init_C, num_rep);
 
 library(rstan);
+library(tictoc);
 rstan_options(auto_write = TRUE);
 options(mc.cores = parallel::detectCores());
-fit_pool <- stan("century_pool.stan", data=data, iter=1000, seed=1234); # complete pooling
-fit_nopool <- stan("century_nopool.stan", data=data, iter=1000, seed=1234); # no pooling
-fit_hier <- stan("century_hier.stan", data=data, iter=1000, seed=1234); # partial pooling
+tic("pool")
+fit_pool <- stan("century_pool.stan", data=data, iter=1500, seed=1234); # complete pooling
+t1<-toc()
+tic("nopool")
+fit_nopool <- stan("century_nopool.stan", data=data, iter=1500, seed=1234); # no pooling
+t2<-toc()
+tic("hier_stiff")
+fit_hier <- stan("century_hier.stan", data=data, iter=1500, seed=1234); # partial pooling
+t3<-toc()
+tic("hier_nonstiff")
+fit_hier_nonstiff <- stan("century_hier_nonstiff.stan", data=data, iter=1500, seed=1234);
+t4<-toc()
 ```
+
+
+```{r, echo=FALSE, results="hide", message=FALSE, comment=NA}
+library(rstan)
+ss_pool<-summary(fit_pool)$summary
+ss_nopool<-summary(fit_nopool)$summary
+ss_hier<-summary(fit_hier)$summary
+ss_hier_nonstiff<-summary(fit_hier_nonstiff)$summary
+```
+
+## initial carbon estimates ($\gamma$)
+
+### pool
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_pool[c("gamma[1]", "gamma[2]", "gamma[3]"),], digits = 2)
+```
+
+### no pool
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_nopool[c("gamma[1]", "gamma[2]", "gamma[3]"),], digits = 2)
+```
+
+### hierarchical (stiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier[c("gamma[1]", "gamma[2]", "gamma[3]"),], digits = 2)
+```
+
+### hierarchical (nonstiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_nonstiff[c("gamma[1]", "gamma[2]", "gamma[3]"),], digits = 2)
+```
+
+## turnover rates 
+
+### pool
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_pool[c("turnover[1]", "turnover[2]", "turnover[3]"),], digits = 1)
+```
+
+### no pool
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_nopool[c("turnover[1]", "turnover[2]", "turnover[3]"),], digits = 1)
+```
+
+### hierarchical (stiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier[c("turnover[1]", "turnover[2]", "turnover[3]"),], digits = 1)
+```
+
+### hierarchical (nonstiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_nonstiff[c("turnover[1]", "turnover[2]", "turnover[3]"),], digits = 1)
+```
+
+\newpage 
+
+## transfer rates (a21)
+
+### pool
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_pool[c("a21"),], digits = 2, row)
+```
+
+### no pool
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_nopool[c("a21[1]", "a21[2]", "a21[3]", "a21[4]", "a21[5]"),], digits = 2)
+```
+
+### hierarchical (stiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier[c("a21[1]", "a21[2]", "a21[3]", "a21[4]", "a21[5]"),], digits = 2)
+```
+
+### hierarchical (nonstiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_nonstiff[c("a21[1]", "a21[2]", "a21[3]", "a21[4]", "a21[5]"),], digits = 2)
+```
+
+## transfer rates (a31)
+
+### pool
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_pool[c("a31"),], digits = 2)
+```
+
+### no pool
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_nopool[c("a31[1]", "a31[2]", "a31[3]", "a31[4]", "a31[5]"),], digits = 2)
+```
+
+### hierarchical (stiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier[c("a31[1]", "a31[2]", "a31[3]", "a31[4]", "a31[5]"),], digits = 2)
+```
+
+### hierarchical (nonstiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_nonstiff[c("a31[1]", "a31[2]", "a31[3]", "a31[4]", "a31[5]"),], digits = 2)
+```
+
