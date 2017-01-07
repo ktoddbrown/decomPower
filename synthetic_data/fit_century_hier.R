@@ -7,7 +7,21 @@ t_cap <- c(seq(from=0.5/360, to=6.5/360, by=1/360), seq(from=10.5/360, to=24.5/3
 init_C <- 1E3*c(.1, .1, .8);
 data <- simulate_data_century(t_meas, t_cap, init_C, num_rep);
 
+modelName <- "century_hier.stan"
+# modelName <- "matrix_exp/century_hier_me.stan"
+
 library(rstan);
 rstan_options(auto_write = TRUE);
 options(mc.cores = parallel::detectCores());
 fit <- stan("century_hier.stan", data=data, iter=50, seed=1234);
+
+## Run diagnostics
+outDir <- modelName
+save(fit, file = file.path(paste(modelName, "Fit.Rsave", sep = "")))
+
+parametersToPlot <- c("turnover", "gamma", "sigma", "sigma_obs", "A1", "A2", "A3")
+parametersToPlot <- c("turnover", "gamma", "a21", "a31")
+parametersToPlot <- c("lp__", parametersToPlot)
+
+stan_trace(fit, parametersToPlot)
+print(fit, parametersToPlot)
