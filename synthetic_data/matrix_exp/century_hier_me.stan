@@ -56,11 +56,6 @@ data {
   matrix<lower=0>[N_t, num_rep] CO2_flux; // measured carbon fluxes 
 }
 
-transformed data { 
-  real x_r[0];  // no real data for ODE system 
-  int x_i[0];   // no integer data for ODE system 
-}
-
 parameters { 
   vector<lower=0>[3] turnover;  // turnover rates
   simplex[3] gamma;             // partitioning coefficients (a simplex) 
@@ -73,7 +68,8 @@ parameters {
   simplex[3] A2_g;              // global values for rates
   simplex[3] A3_g;              // global values for rates
   real<lower=1> kappa;
-} 
+}
+
 transformed parameters { 
   vector<lower=0>[3] k;             // decomposition rates (1/turnover)
   matrix[N_t, num_rep] CO2_meas;    // evolved CO2 at measurement times
@@ -95,11 +91,9 @@ transformed parameters {
   }
   for (i in 1:num_rep) {
     CO2_meas[,i] = evolved_CO2(N_t, t0, t_meas, gamma, totalC_t0, 
-                         k, a21[i], a31[i], a12[i], a32[i], a13[i], 
-                         x_r, x_i); 
+                         k, a21[i], a31[i], a12[i], a32[i], a13[i]);
     CO2_cap[,i] = evolved_CO2(N_t, t0, t_cap, gamma, totalC_t0, 
-                        k, a21[i], a31[i], a12[i], a32[i], a13[i], 
-                        x_r, x_i);
+                        k, a21[i], a31[i], a12[i], a32[i], a13[i]);
     CO2_flux_hat[,i] = (CO2_meas[,i] - CO2_cap[,i])./(t_meas - t_cap);
   }
 }
