@@ -35,7 +35,7 @@ Alpha[2, 2] = 1 - Alpha[1, 2] - Alpha[3, 2];
 Alpha[3, 3] = 1 - Alpha[1, 3] - Alpha[2, 3];
 for (this_rep in 1:num_rep) {
   # Hierarchical modeling of transfer rates for replications:
-  kappa <- 100;
+  kappa <- 10;
   Alpha_rep[,1, this_rep] <-  rdirichlet(1, Alpha[,1] * kappa);
   Alpha_rep[,2, this_rep] <-  rdirichlet(1, Alpha[,2] * kappa);
   Alpha_rep[,3, this_rep] <-  rdirichlet(1, Alpha[,3] * kappa);
@@ -56,7 +56,7 @@ for (this_rep in 1:num_rep) {
   CO2_t_cap <- totalC_t0 - rowSums(cap_data[2:nrow(cap_data),2:(m+1)]);
   CO2_flux <- (CO2_t_meas - CO2_t_cap)/(t_meas-t_cap); 
   # Adding log-normal noise:
-  CO2_flux_mat[, this_rep] <- exp(log(CO2_flux) + rnorm(length(CO2_flux),0,.5));
+  CO2_flux_mat[, this_rep] <- exp(log(CO2_flux) + rnorm(length(CO2_flux),0,.05));
 }
 simulated_data <- list(N_t = N_t, t_meas = t_meas, t_cap = t_cap, 
                        num_rep = num_rep, totalC_t0 = totalC_t0,

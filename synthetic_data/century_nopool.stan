@@ -126,7 +126,7 @@ model {
   turnover[2] ~ normal(25, 2.5 * sigma[2]);
   turnover[3] ~ normal(1000, 100 * sigma[3]);
   sigma ~ cauchy(0,1); 
-  sigma_obs ~ cauchy(0,1);
+  sigma_obs ~ cauchy(0,.1);
   
   // likelihood     
   to_vector(CO2_flux) ~ lognormal(to_vector(log(CO2_flux_hat)), sigma_obs);   
