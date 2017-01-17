@@ -62,14 +62,6 @@ The cap times might vary in different experiments. Here, we assume that the cap 
 $$t_{cap} = (\frac{0.5}{360}, \frac{1.5}{360}, \frac{2.5}{360}, \frac{3.5}{360}, \frac{4.5}{360}, \frac{5.5}{360}, \frac{6.5}{360}, \frac{10.5}{360}, \frac{17.5}{360}, \frac{24.5}{360}, \frac{45}{360}, \frac{75}{360}, \frac{105}{360}, \ldots, \frac{345}{360}) 
 $$
 
-### Observation error
-
-From empirical studies we know that the noise standard deviation is approximately $30\%$--$40\%$ of the value of the flux.  We simulate this by a log-normal (multiplicative) noise as follows:
-$$
-\text{observed flux} = \log \left( \exp(\text{actual flux}) + \tau\right),
-$$
-where $\tau\sim\mathcal{N}(0,0.5)$. Therefore, with $95\%$ chance observed flux will be between $\exp(-0.5) = .6$ and $\exp(0.5)=1.6$ of the actual value. 
-
 ### Replications
 
 Generally, we have several replications for each experiment (i.e., several CO$_2$ fluxes). We assume that these replications differ slightly in the transfer rates but have the same $\gamma$ and turnover rates (given that they are from the same soil sample). The way we model the variation in the turnover rates is through a hirarchical Dirichlet model. The vector $(\alpha_{1j}^i, \alpha_{2j}^i, \alpha_{3j}^i)$ is a simplex. The superscript $i$ refers to the $i$'th replicate and index $j$ refers to the $j$'th pool. We assume that there are global simplex vectors $(\alpha_{1j}^0, \alpha_{2j}^0, \alpha_{3j}^0)$ such that we have the following hierarchical structure:
