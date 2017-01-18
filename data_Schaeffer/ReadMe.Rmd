@@ -20,3 +20,4 @@ Subfolders are orgranized by date (yyyymmdd) data was provided. Folders include 
 - 20161220: Folder for data sent on 20 December 2016
     + "Cany summary data for KT-B.xls": updated excel file for Navada FACE and Canyonlands soil measurements including incubation measurements (d13C, and dCO2) for Navada FACE (388 days) and Canyonlands (388 days) as well as soil characterization measurements by partical size (C%, N%, d13C, d15N). Does not include bulk density.
     + "email_20122016.pdf": email associated with data provided
+- "Schadel et al._2013.pdf": a copy of the inital study conducted by Yiqi Luo's lab to fit TECO (a first order linear decay model) to the Navada FACE soil incubation data set using MCMC.
