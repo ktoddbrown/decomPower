@@ -1,0 +1,22 @@
+---
+title: "README for data sets"
+author: "K Todd-Brown (ktoddbrown@gmail.com)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: pdf_document
+---
+
+This data was provided by Sean Schaeffer (Univ. Tennesse Knoxville, sschaef5@utk.edu).
+
+Primary use file for incubation study will be "20161220/Cany summary data for KT-B.xls"
+
+Subfolders are orgranized by date (yyyymmdd) data was provided. Folders include a copy of the email with which the files were sent.
+
+- 20161129: Folder for data set on 29 November 2016
+    + "schaeffer_BGC_2012_print_version*": publication and supplemental for Canyonlands data set
+    + "Cany summary data for KT-B.xls": Navada FACE and Canyonlands soil respriation measurements (d13C, and dCO2) for Navada FACE (388 days) and Canyonlands (388 days) incubations.
+    + "email_29112016": email associated with data provided
+- 20161130: Folder for data set on 30 November 2016
+    + "LT incubation design.doc": inital study design for Navada FACE and Canyonlands studyies
+- 20161220: Folder for data sent on 20 December 2016
+    + "Cany summary data for KT-B.xls": updated excel file for Navada FACE and Canyonlands soil measurements including incubation measurements (d13C, and dCO2) for Navada FACE (388 days) and Canyonlands (388 days) as well as soil characterization measurements by partical size (C%, N%, d13C, d15N). Does not include bulk density.
+    + "email_20122016.pdf": email associated with data provided
