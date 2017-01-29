@@ -38,7 +38,7 @@ functions {
     C_t0 = gamma * totalC_t0;
 
     for (t in 1:N_t) {
-      C_t[t] = matrix_exp(ts[t] * A) * C_t0;
+      C_t[t] = matrix_exp((ts[t] - t0) * A) * C_t0;
       CO2_t[t] = totalC_t0 - sum(C_t[t]); 
     }
 
@@ -54,10 +54,7 @@ data {
   vector<lower=t0>[N_t] t_cap;  // cap times 
   matrix<lower=0>[N_t, num_rep] CO2_flux; // measured carbon fluxes 
 } 
-transformed data { 
-  real x_r[0];  // no real data for ODE system 
-  int x_i[0];   // no integer data for ODE system 
-} 
+
 parameters { 
   vector<lower=0>[3] turnover;  // turnover rates
   simplex[3] gamma;             // partitioning coefficients (a simplex) 
