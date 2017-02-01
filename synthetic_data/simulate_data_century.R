@@ -1,11 +1,12 @@
-simulate_data_century <- function(t_meas, t_cap, init_C, num_rep) {
+simulate_data_century <- function(t_meas, t_cap, gamma_global, num_rep) {
 # INPUTS: 
 #   t_meas:  measurement times
 #   t_cap:   cap times
-#   init_C:  initial pool contents
+#   gamma_global:  initial pool contents
 #   num_rep: number of replications
 library(deSolve)
 library(gtools)
+set.seed(1234)
 genDerivs <-function(t, Ct, params) {
   # General diff eq model: dC_dt = I(t) + A(t)*C(t)
   # INPUTS:
@@ -16,13 +17,14 @@ genDerivs <-function(t, Ct, params) {
   return(list(dC_dt));
 }
 m <- 3; # number of pools
-C_t0 <- matrix(init_C, nrow=m);
 turnover <- c(1.5, 25, 1000);
 K <- 1/turnover;
 I <- rep(0, m); # no input flux for century
 N_t <- length(t_meas);
 CO2_flux_mat <- matrix(NA, nrow = N_t, ncol = num_rep);
 Alpha_rep <- array(0, c(m, m, num_rep));
+gamma_rep <- array(0, c(m, num_rep));
+
 Alpha <- matrix(0, m, m);
 # Setting global transfer rates with expert-tuned values:
 Alpha[2, 1] = 0.5;
@@ -34,11 +36,16 @@ Alpha[1, 1] = 1 - Alpha[2, 1] - Alpha[3, 1];
 Alpha[2, 2] = 1 - Alpha[1, 2] - Alpha[3, 2];
 Alpha[3, 3] = 1 - Alpha[1, 3] - Alpha[2, 3];
 for (this_rep in 1:num_rep) {
+  # Hierarchical modeling of initializations for replications:
+  kappa_inits <- 10;
+  gamma_rep[,this_rep] <- rdirichlet(1, gamma_global * kappa_inits);
+  C_t0 <- gamma_rep[,this_rep];
+  
   # Hierarchical modeling of transfer rates for replications:
-  kappa <- 10;
-  Alpha_rep[,1, this_rep] <-  rdirichlet(1, Alpha[,1] * kappa);
-  Alpha_rep[,2, this_rep] <-  rdirichlet(1, Alpha[,2] * kappa);
-  Alpha_rep[,3, this_rep] <-  rdirichlet(1, Alpha[,3] * kappa);
+  kappa_rates <- 10;
+  Alpha_rep[,1, this_rep] <-  rdirichlet(1, Alpha[,1] * kappa_rates);
+  Alpha_rep[,2, this_rep] <-  rdirichlet(1, Alpha[,2] * kappa_rates);
+  Alpha_rep[,3, this_rep] <-  rdirichlet(1, Alpha[,3] * kappa_rates);
   Alpha_rep[1, 1, this_rep] <- 0;
   Alpha_rep[2, 2, this_rep] <- 0;
   Alpha_rep[3, 3, this_rep] <- 0;
@@ -60,7 +67,7 @@ for (this_rep in 1:num_rep) {
 }
 simulated_data <- list(N_t = N_t, t_meas = t_meas, t_cap = t_cap, 
                        num_rep = num_rep, totalC_t0 = totalC_t0,
-                       t0=t0, CO2_flux=CO2_flux_mat, Alpha_rep=Alpha_rep);
+                       t0=t0, CO2_flux=CO2_flux_mat, Alpha_rep=Alpha_rep, gamma_rep = gamma_rep);
 return(simulated_data);
 }
 
