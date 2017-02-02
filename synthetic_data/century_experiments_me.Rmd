@@ -1,6 +1,6 @@
 ---
-title: "Hierarchical Bayesian Modeling of CO2 Flux"
-output: pdf_document
+title: "Hierarchical Bayesian Modeling of CO2 Flux (using matrix exp solution)"
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
