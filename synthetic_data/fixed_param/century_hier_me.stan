@@ -1,8 +1,6 @@
 // Fitting the century model with complete pooling
 // This version uses a matrix exponential solution instead of
 // an ODE integrator.
-// This model is meant to test the deterministic features of the
-// model.
 functions { 
   /** 
   * Compute evolved CO2 from the system given the specified 
@@ -59,37 +57,42 @@ data {
 
 parameters { 
   vector<lower=0>[3] turnover;  // turnover rates
-  simplex[3] gamma;             // partitioning coefficients (a simplex) 
-  vector<lower=0>[3] sigma;     // turnover standard deviation 
-  real<lower=0> sigma_obs;      // observation standard deviation
-  simplex[3] A1[num_rep];       // output rates from pool 1 
-  simplex[3] A2[num_rep];       // output rates from pool 2
-  simplex[3] A3[num_rep];       // output rates from pool 3
-  simplex[3] A1_g;              // global values for rates
-  simplex[3] A2_g;              // global values for rates
-  simplex[3] A3_g;              // global values for rates
-  real<lower=1> kappa;
-}
-
-transformed parameters { 
-  vector<lower=0>[3] k;             // decomposition rates (1/turnover)
-  matrix[N_t, num_rep] CO2_meas;    // evolved CO2 at measurement times
-  matrix[N_t, num_rep] CO2_cap;     // evolved CO2 at cap times
-  matrix[N_t, num_rep] CO2_flux_hat;// CO2 flux (average evolved CO2 between t_cap & t_meas)
+  simplex[3] gamma;             // partitioning coefficients (a simplex)
+  
   real<lower=0, upper=1> a21[num_rep];  // transfer rates 
   real<lower=0, upper=1> a31[num_rep];
   real<lower=0, upper=1> a12[num_rep];
   real<lower=0, upper=1> a32[num_rep];
   real<lower=0, upper=1> a13[num_rep];
+  // vector<lower=0>[3] sigma;     // turnover standard deviation 
+  // real<lower=0> sigma_obs;      // observation standard deviation
+  // simplex[3] A1[num_rep];       // output rates from pool 1 
+  // simplex[3] A2[num_rep];       // output rates from pool 2
+  // simplex[3] A3[num_rep];       // output rates from pool 3
+  // simplex[3] A1_g;              // global values for rates
+  // simplex[3] A2_g;              // global values for rates
+  // simplex[3] A3_g;              // global values for rates
+  // real<lower=1> kappa;
+} 
+transformed parameters { 
+  vector<lower=0>[3] k;              // decomposition rates (1/turnover)
+  matrix[N_t, num_rep] CO2_meas;     // evolved CO2 at measurement times
+  matrix[N_t, num_rep] CO2_cap;      // evolved CO2 at cap times
+  matrix[N_t, num_rep] CO2_flux_hat; // CO2 flux (average evolved CO2 between t_cap & t_meas)
+  // real<lower=0, upper=1> a21[num_rep];  // transfer rates 
+  // real<lower=0, upper=1> a31[num_rep];
+  // real<lower=0, upper=1> a12[num_rep];
+  // real<lower=0, upper=1> a32[num_rep];
+  // real<lower=0, upper=1> a13[num_rep];
   k = 1 ./ turnover;
   // transfer rates are different for each replication:
-  for (i in 1:num_rep) {
-    a21[i] = A1[i, 2];
-    a31[i] = A1[i, 3];
-    a12[i] = A2[i, 1];
-    a32[i] = A2[i, 3];
-    a13[i] = A3[i, 1];
-  }
+  // for (i in 1:num_rep) {
+  //   a21[i] = A1[i, 2];
+  //   a31[i] = A1[i, 3];
+  //   a12[i] = A2[i, 1];
+  //   a32[i] = A2[i, 3];
+  //   a13[i] = A3[i, 1];
+  // }
   for (i in 1:num_rep) {
     CO2_meas[,i] = evolved_CO2(N_t, t0, t_meas, gamma, totalC_t0, 
                          k, a21[i], a31[i], a12[i], a32[i], a13[i]); 
@@ -97,13 +100,27 @@ transformed parameters {
                         k, a21[i], a31[i], a12[i], a32[i], a13[i]);
     CO2_flux_hat[,i] = (CO2_meas[,i] - CO2_cap[,i])./(t_meas - t_cap);
   }
-}
-
-model { 
-  // dummy likelyhood
-  sigma ~ normal(0, 1);
+} 
+model {
+  // priors 
+  // turnover[1] ~ normal(1.5, 0.15 * sigma[1]);
+  // turnover[2] ~ normal(25, 2.5 * sigma[2]);
+  // turnover[3] ~ normal(1000, 100 * sigma[3]);
+  // sigma ~ cauchy(0,1); 
+  // sigma_obs ~ cauchy(0,.1);
+  // kappa ~ normal(10,5);
+  // for (i in 1:num_rep) {
+  //   A1[i] ~ dirichlet(kappa*A1_g);
+  //   A2[i] ~ dirichlet(kappa*A2_g);
+  //   A3[i] ~ dirichlet(kappa*A3_g);
+  // }
+  // 
+  // // likelihood     
+  // to_vector(CO2_flux) ~ lognormal(to_vector(log(CO2_flux_hat)), sigma_obs);   
 }
 
 generated quantities {
+  
   matrix[N_t, num_rep] CO2_flux_hat_pred = CO2_flux_hat;
+  
 }
