@@ -1,0 +1,475 @@
+---
+title: "Hierarchical Bayesian Modeling of CO2 Flux (detailed diagnostics)"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Introduction
+
+This document reproduces the `century_experiment.pdf` doc and focuses on the hierarchical models. I added the results obtained when solving the ODEs with a matrix exponential solution, and a few diagnostics to test for convergence.
+
+## Century Model
+
+### R code
+
+The R function for simulating the data is shown below. The details are described above.
+```{r simulate}
+simulate_data_century <- function(t_meas, t_cap, init_C, num_rep) {
+# INPUTS: 
+#   t_meas:  measurement times
+#   t_cap:   cap times
+#   init_C:  initial pool contents
+#   num_rep: number of replications
+library(deSolve)
+library(gtools)
+genDerivs <-function(t, Ct, params) {
+  # General diff eq model: dC_dt = I(t) + A(t)*C(t)
+  # INPUTS:
+  #   t: time
+  #   Ct: the value of the vector C at time t, C(t)
+  #   params: it has two fields, params$I and params$A
+  dC_dt = params$I + params$A %*% Ct;
+  return(list(dC_dt));
+}
+m <- 3; # number of pools
+C_t0 <- matrix(init_C, nrow=m);
+turnover <- c(1.5, 25, 1000);
+K <- 1/turnover;
+I <- rep(0, m); # no input flux for century
+N_t <- length(t_meas);
+CO2_flux_mat <- matrix(NA, nrow = N_t, ncol = num_rep);
+Alpha_rep <- array(0, c(m, m, num_rep));
+Alpha <- matrix(0, m, m);
+# Setting global transfer rates with expert-tuned values:
+Alpha[2, 1] = 0.5;
+Alpha[3, 1] = 0.004;
+Alpha[1, 2] = 0.42;
+Alpha[3, 2] = 0.03;
+Alpha[1, 3] = 0.45;
+Alpha[1, 1] = 1 - Alpha[2, 1] - Alpha[3, 1];
+Alpha[2, 2] = 1 - Alpha[1, 2] - Alpha[3, 2];
+Alpha[3, 3] = 1 - Alpha[1, 3] - Alpha[2, 3];
+for (this_rep in 1:num_rep) {
+  # Hierarchical modeling of transfer rates for replications:
+  kappa <- 10;
+  Alpha_rep[,1, this_rep] <-  rdirichlet(1, Alpha[,1] * kappa);
+  Alpha_rep[,2, this_rep] <-  rdirichlet(1, Alpha[,2] * kappa);
+  Alpha_rep[,3, this_rep] <-  rdirichlet(1, Alpha[,3] * kappa);
+  Alpha_rep[1, 1, this_rep] <- 0;
+  Alpha_rep[2, 2, this_rep] <- 0;
+  Alpha_rep[3, 3, this_rep] <- 0;
+  A <- Alpha_rep[,, this_rep] * matrix(rep(K, m), nrow = m, byrow = TRUE) - diag(K);
+  params <- list(I=I, A=A);
+  t0 <- 0;
+  # Solving the ODE system for given parameters:
+  meas_data<-ode(y = C_t0, func = genDerivs,
+          times = c(t0,t_meas), parms = params);
+  cap_data<-ode(y = C_t0, func = genDerivs,
+                 times = c(t0,t_cap), parms = params);
+  # Calculating CO2 flux 
+  totalC_t0 = sum(meas_data[1,2:(m+1)]);
+  CO2_t_meas <- totalC_t0 - rowSums(meas_data[2:nrow(meas_data), 2:(m+1)]);
+  CO2_t_cap <- totalC_t0 - rowSums(cap_data[2:nrow(cap_data),2:(m+1)]);
+  CO2_flux <- (CO2_t_meas - CO2_t_cap)/(t_meas-t_cap); 
+  # Adding log-normal noise:
+  CO2_flux_mat[, this_rep] <- exp(log(CO2_flux) + rnorm(length(CO2_flux),0,.05));
+}
+simulated_data <- list(N_t = N_t, t_meas = t_meas, t_cap = t_cap, 
+                       num_rep = num_rep, totalC_t0 = totalC_t0,
+                       t0=t0, CO2_flux=CO2_flux_mat, Alpha_rep=Alpha_rep);
+return(simulated_data);
+}
+```
+
+## Model specification in Stan
+
+We fit the simulated flux replications in the following way:
+\begin{enumerate}
+  \item Complete pooling: fitting a single model to all the replications, i.e., estimating only a single set of parameters for all models;
+  \item No pooling: fitting a model separately to each replication, i.e., estimating the model parameters independently for each replication;
+  \item Partial pooling: fitting a hierarchical Bayesian model which estimates parameters jointly for all replications and allows for variation between replicates. For this last model, the differential equation is solved in three manners:
+  \begin{enumerate}
+    \item using a stiff differential equation solver (bdf method)
+    \item using a non-stiff differential equation solver (rk45 method)
+    \item using a matrix exponential solution.
+  \end{enumerate}
+\end{enumerate}
+
+### Data 
+
+The data is also the same for all the models.
+
+```
+data { 
+  real<lower=0> totalC_t0;      // initial total carbon 
+  real t0;                      // initial time 
+  int<lower=0> N_t;             // number of measurement times 
+  int<lower=0> num_rep;         // number of replicates 
+  vector<lower=t0>[N_t] t_meas; // measurement times 
+  vector<lower=t0>[N_t] t_cap;  // cap times 
+  matrix<lower=0>[N_t, num_rep] CO2_flux; // measured carbon fluxes 
+} 
+transformed data { 
+  real x_r[0];  // no real data for ODE system 
+  int x_i[0];   // no integer data for ODE system 
+} 
+```
+
+Other parts of the stan model are different for different models. For a description of each model, see `century_experiments.pdf` and `century_experiments_me.htlm`. 
+
+
+## Fitting the models
+```{r fit, message=FALSE, warning=FALSE, cache=TRUE}
+num_rep <- 5;
+t_meas <- c(seq(from=1/360, to=7/360, by=1/360), seq(from=14/360, to=28/360, by=7/360),
+            seq(from=60/360, to=360/360, by=30/360));
+t_cap <- c(seq(from=0.5/360, to=6.5/360, by=1/360), seq(from=10.5/360, to=24.5/360, by=7/360),
+           seq(from=45/360, to=345/360, by=30/360));
+init_C <- c(.1, .1, .8);
+data <- simulate_data_century(t_meas, t_cap, init_C, num_rep);
+
+library(rstan);
+library(tictoc);
+rstan_options(auto_write = TRUE);
+options(mc.cores = parallel::detectCores());
+tic("hier_stiff")
+fit_hier <- stan("century_hier.stan", data=data, iter=1500, seed=1234); # partial pooling
+t3<-toc()
+tic("hier_nonstiff")
+fit_hier_nonstiff <- stan("century_hier_nonstiff.stan", data=data, iter=1500, seed=1234);
+t4<-toc()
+tic("hier_me")
+fit_hier_me <- stan("century_hier_me.stan", data=data, iter=1500, seed=1234);
+t5<-toc()
+```
+
+
+```{r, echo=FALSE, results="hide", message=FALSE, comment=NA}
+library(rstan)
+ss_hier<-summary(fit_hier)$summary
+ss_hier_nonstiff<-summary(fit_hier_nonstiff)$summary
+ss_hier_me<-summary(fit_hier_me)$summary
+```
+
+## initial carbon estimates ($\gamma$)
+
+Actual Values: `gamma[1]=gamma[2]=0.1`, `gamma[3]=0.8`. 
+
+### hierarchical (stiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier[c("gamma[1]", "gamma[2]", "gamma[3]"),], digits = 2)
+```
+
+### hierarchical (nonstiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_nonstiff[c("gamma[1]", "gamma[2]", "gamma[3]"),], digits = 2)
+```
+
+### hierarchical (matrix exponential)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_me[c("gamma[1]", "gamma[2]", "gamma[3]"),], digits = 2)
+```
+
+## turnover rates 
+
+Actual Values: 1.5, 25, 1000.
+
+### hierarchical (stiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier[c("turnover[1]", "turnover[2]", "turnover[3]"),], digits = 1)
+```
+
+### hierarchical (nonstiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_nonstiff[c("turnover[1]", "turnover[2]", "turnover[3]"),], digits = 1)
+```
+
+### hierarchical (matrix exponential)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_me[c("turnover[1]", "turnover[2]", "turnover[3]"),], digits = 1)
+```
+
+
+## transfer rates (a21)
+
+Actual Global Value: 0.5 (with variations for each replication)
+
+### pool
+
+### hierarchical (stiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier[c("a21[1]", "a21[2]", "a21[3]", "a21[4]", "a21[5]"),], digits = 2)
+```
+
+### hierarchical (nonstiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_nonstiff[c("a21[1]", "a21[2]", "a21[3]", "a21[4]", "a21[5]"),], digits = 2)
+```
+
+
+### hierarchical (matrix exponential)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_me[c("a21[1]", "a21[2]", "a21[3]", "a21[4]", "a21[5]"),], digits = 2)
+```
+
+## transfer rates (a31)
+
+Actual Global Value: 0.004 (with variations for each replication)
+
+### pool
+
+### hierarchical (stiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier[c("a31[1]", "a31[2]", "a31[3]", "a31[4]", "a31[5]"),], digits = 2)
+```
+
+### hierarchical (nonstiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_nonstiff[c("a31[1]", "a31[2]", "a31[3]", "a31[4]", "a31[5]"),], digits = 2)
+```
+
+### hierarchical (matrix exponential)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_me[c("a31[1]", "a31[2]", "a31[3]", "a31[4]", "a31[5]"),], digits = 2)
+```
+
+
+## transfer rates (a12)
+
+Actual Global Value: 0.42 (with variations for each replication)
+
+### hierarchical (stiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier[c("a12[1]", "a12[2]", "a12[3]", "a12[4]", "a12[5]"),], digits = 2)
+```
+
+### hierarchical (nonstiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_nonstiff[c("a12[1]", "a12[2]", "a12[3]", "a12[4]", "a12[5]"),], digits = 2)
+```
+
+### hierarchical (matrix exponential)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_me[c("a12[1]", "a12[2]", "a12[3]", "a12[4]", "a12[5]"),], digits = 2)
+```
+
+
+## transfer rates (a32)
+
+Actual Global Value: 0.03 (with variations for each replication)
+
+### pool
+
+### hierarchical (stiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier[c("a32[1]", "a32[2]", "a32[3]", "a32[4]", "a32[5]"),], digits = 2)
+```
+
+### hierarchical (nonstiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_nonstiff[c("a32[1]", "a32[2]", "a32[3]", "a32[4]", "a32[5]"),], digits = 2)
+```
+
+### hierarchical (matrix exponential)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_me[c("a32[1]", "a32[2]", "a32[3]", "a32[4]", "a32[5]"),], digits = 2)
+```
+
+
+## transfer rates (a13)
+
+Actual Global Value: 0.45 (with variations for each replication)
+
+### hierarchical (stiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier[c("a13[1]", "a13[2]", "a13[3]", "a13[4]", "a13[5]"),], digits = 2)
+```
+
+### hierarchical (nonstiff solver)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_nonstiff[c("a13[1]", "a13[2]", "a13[3]", "a13[4]", "a13[5]"),], digits = 2)
+```
+
+### hierarchical (matrix exponential)
+
+```{r, echo=FALSE, message=FALSE, comment=NA}
+print(ss_hier_me[c("a13[1]", "a13[2]", "a13[3]", "a13[4]", "a13[5]"),], digits = 2)
+```
+
+
+## Plotting fits to data
+
+```{r plot_hier, echo=FALSE}
+library(rstan)
+library(ggplot2);
+fit <- extract(fit_hier);
+num_rep<-5;
+CO2_flux_hat <- array(0,c(data$N_t, num_rep));
+CO2_flux_lci <- array(NA,c(data$N_t, num_rep));
+CO2_flux_uci <- array(NA,c(data$N_t, num_rep));
+for (nr in 1:num_rep) {
+  for (t in 1:data$N_t) {
+    CO2_flux_hat[t,nr] <- median(fit$CO2_flux_hat[,t,nr]);
+    CO2_flux_lci[t,nr] <- quantile(fit$CO2_flux_hat[,t,nr], 0.025);
+    CO2_flux_uci[t,nr] <-  quantile(fit$CO2_flux_hat[,t,nr], 0.975);
+  }
+}
+df_plot <- data.frame(list(t_meas = data$t_meas, 
+                           CO2_flux_meas = data$CO2_flux,
+                           CO2_flux_hat = CO2_flux_hat, CO2_flux_lci = CO2_flux_lci, 
+                           CO2_flux_uci = CO2_flux_uci));
+
+ggplot(df_plot, aes(x = t_meas)) +
+  geom_ribbon(aes(ymin = CO2_flux_lci[,1],
+                  ymax = CO2_flux_uci[,1]),
+              fill="lightyellow") +
+  geom_line(aes(y=CO2_flux_hat[,1]),colour="darkred") +
+  geom_ribbon(aes(ymin = CO2_flux_lci[,2],
+                  ymax = CO2_flux_uci[,2]),
+              fill="lightyellow") +
+  geom_line(aes(y=CO2_flux_hat[,2]),colour="darkred") +
+  geom_ribbon(aes(ymin = CO2_flux_lci[,3],
+                  ymax = CO2_flux_uci[,3]),
+              fill="lightyellow") +
+  geom_line(aes(y=CO2_flux_hat[,3]),colour="darkred") +
+  geom_ribbon(aes(ymin = CO2_flux_lci[,4],
+                  ymax = CO2_flux_uci[,4]),
+              fill="lightyellow") +
+  geom_line(aes(y=CO2_flux_hat[,4]),colour="darkred") +
+  geom_ribbon(aes(ymin = CO2_flux_lci[,5],
+                  ymax = CO2_flux_uci[,5]),
+              fill="lightyellow") +
+  geom_line(aes(y=CO2_flux_hat[,5]),colour="darkred") +
+  geom_line(aes(y=data$CO2_flux[,1]),colour="darkblue") +
+    geom_line(aes(y=data$CO2_flux[,2]),colour="darkblue") +
+  geom_line(aes(y=data$CO2_flux[,3]),colour="darkblue") +
+  geom_line(aes(y=data$CO2_flux[,4]),colour="darkblue") +
+  geom_line(aes(y=data$CO2_flux[,5]),colour="darkblue") +
+  labs(x="Time (days)", 
+       y="CO2 flux") +
+  ggtitle("Soil Incubation: Century Model (hierarchical-stiff),  \n data (blue), estimate median (red),  95% interval (yellow)");
+```
+
+```{r plot_hierns, echo=FALSE}
+library(rstan)
+library(ggplot2);
+fit <- extract(fit_hier_nonstiff);
+num_rep<-5;
+CO2_flux_hat <- array(0,c(data$N_t, num_rep));
+CO2_flux_lci <- array(NA,c(data$N_t, num_rep));
+CO2_flux_uci <- array(NA,c(data$N_t, num_rep));
+for (nr in 1:num_rep) {
+  for (t in 1:data$N_t) {
+    CO2_flux_hat[t,nr] <- median(fit$CO2_flux_hat[,t,nr]);
+    CO2_flux_lci[t,nr] <- quantile(fit$CO2_flux_hat[,t,nr], 0.025);
+    CO2_flux_uci[t,nr] <-  quantile(fit$CO2_flux_hat[,t,nr], 0.975);
+  }
+}
+df_plot <- data.frame(list(t_meas = data$t_meas, 
+                           CO2_flux_meas = data$CO2_flux,
+                           CO2_flux_hat = CO2_flux_hat, CO2_flux_lci = CO2_flux_lci, 
+                           CO2_flux_uci = CO2_flux_uci));
+
+ggplot(df_plot, aes(x = t_meas)) +
+  geom_ribbon(aes(ymin = CO2_flux_lci[,1],
+                  ymax = CO2_flux_uci[,1]),
+              fill="lightyellow") +
+  geom_line(aes(y=CO2_flux_hat[,1]),colour="darkred") +
+  geom_ribbon(aes(ymin = CO2_flux_lci[,2],
+                  ymax = CO2_flux_uci[,2]),
+              fill="lightyellow") +
+  geom_line(aes(y=CO2_flux_hat[,2]),colour="darkred") +
+  geom_ribbon(aes(ymin = CO2_flux_lci[,3],
+                  ymax = CO2_flux_uci[,3]),
+              fill="lightyellow") +
+  geom_line(aes(y=CO2_flux_hat[,3]),colour="darkred") +
+  geom_ribbon(aes(ymin = CO2_flux_lci[,4],
+                  ymax = CO2_flux_uci[,4]),
+              fill="lightyellow") +
+  geom_line(aes(y=CO2_flux_hat[,4]),colour="darkred") +
+  geom_ribbon(aes(ymin = CO2_flux_lci[,5],
+                  ymax = CO2_flux_uci[,5]),
+              fill="lightyellow") +
+  geom_line(aes(y=CO2_flux_hat[,5]),colour="darkred") +
+  geom_line(aes(y=data$CO2_flux[,1]),colour="darkblue") +
+    geom_line(aes(y=data$CO2_flux[,2]),colour="darkblue") +
+  geom_line(aes(y=data$CO2_flux[,3]),colour="darkblue") +
+  geom_line(aes(y=data$CO2_flux[,4]),colour="darkblue") +
+  geom_line(aes(y=data$CO2_flux[,5]),colour="darkblue") +
+  labs(x="Time (days)", 
+       y="CO2 flux") +
+  ggtitle("Soil Incubation: Century Model (hierarchical-nonstiff),  \n data (blue), estimate median (red),  95% interval (yellow)");
+```
+
+```{r plot_hier, echo=FALSE}
+library(rstan)
+library(ggplot2);
+fit <- extract(fit_hier_me);
+num_rep<-5;
+CO2_flux_hat <- array(0,c(data$N_t, num_rep));
+CO2_flux_lci <- array(NA,c(data$N_t, num_rep));
+CO2_flux_uci <- array(NA,c(data$N_t, num_rep));
+for (nr in 1:num_rep) {
+  for (t in 1:data$N_t) {
+    CO2_flux_hat[t,nr] <- median(fit$CO2_flux_hat[,t,nr]);
+    CO2_flux_lci[t,nr] <- quantile(fit$CO2_flux_hat[,t,nr], 0.025);
+    CO2_flux_uci[t,nr] <-  quantile(fit$CO2_flux_hat[,t,nr], 0.975);
+  }
+}
+df_plot <- data.frame(list(t_meas = data$t_meas, 
+                           CO2_flux_meas = data$CO2_flux,
+                           CO2_flux_hat = CO2_flux_hat, CO2_flux_lci = CO2_flux_lci, 
+                           CO2_flux_uci = CO2_flux_uci));
+
+ggplot(df_plot, aes(x = t_meas)) +
+  geom_ribbon(aes(ymin = CO2_flux_lci[,1],
+                  ymax = CO2_flux_uci[,1]),
+              fill="lightyellow") +
+  geom_line(aes(y=CO2_flux_hat[,1]),colour="darkred") +
+  geom_ribbon(aes(ymin = CO2_flux_lci[,2],
+                  ymax = CO2_flux_uci[,2]),
+              fill="lightyellow") +
+  geom_line(aes(y=CO2_flux_hat[,2]),colour="darkred") +
+  geom_ribbon(aes(ymin = CO2_flux_lci[,3],
+                  ymax = CO2_flux_uci[,3]),
+              fill="lightyellow") +
+  geom_line(aes(y=CO2_flux_hat[,3]),colour="darkred") +
+  geom_ribbon(aes(ymin = CO2_flux_lci[,4],
+                  ymax = CO2_flux_uci[,4]),
+              fill="lightyellow") +
+  geom_line(aes(y=CO2_flux_hat[,4]),colour="darkred") +
+  geom_ribbon(aes(ymin = CO2_flux_lci[,5],
+                  ymax = CO2_flux_uci[,5]),
+              fill="lightyellow") +
+  geom_line(aes(y=CO2_flux_hat[,5]),colour="darkred") +
+  geom_line(aes(y=data$CO2_flux[,1]),colour="darkblue") +
+    geom_line(aes(y=data$CO2_flux[,2]),colour="darkblue") +
+  geom_line(aes(y=data$CO2_flux[,3]),colour="darkblue") +
+  geom_line(aes(y=data$CO2_flux[,4]),colour="darkblue") +
+  geom_line(aes(y=data$CO2_flux[,5]),colour="darkblue") +
+  labs(x="Time (days)", 
+       y="CO2 flux") +
+  ggtitle("Soil Incubation: Century Model (hierarchical-stiff),  \n data (blue), estimate median (red),  95% interval (yellow)");
+```
