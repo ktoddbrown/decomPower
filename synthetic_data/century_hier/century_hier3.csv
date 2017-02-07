@@ -1,0 +1,38 @@
+# stan_version_major = 2
+# stan_version_minor = 14
+# stan_version_patch = 0
+# model = century_hier_model
+# method = sample (Default)
+#   sample
+#     num_samples = 500
+#     num_warmup = 500
+#     save_warmup = 0 (Default)
+#     thin = 1 (Default)
+#     adapt
+#       engaged = 1 (Default)
+#       gamma = 0.050000000000000003 (Default)
+#       delta = 0.80000000000000004 (Default)
+#       kappa = 0.75 (Default)
+#       t0 = 10 (Default)
+#       init_buffer = 75 (Default)
+#       term_buffer = 50 (Default)
+#       window = 25 (Default)
+#     algorithm = hmc (Default)
+#       hmc
+#         engine = nuts (Default)
+#           nuts
+#             max_depth = 10 (Default)
+#         metric = diag_e (Default)
+#         stepsize = 1 (Default)
+#         stepsize_jitter = 0 (Default)
+# id = 0 (Default)
+# data
+#   file = /data/decomPower/synthetic_data/century_hier/century_hier.data.R
+# init = /data/decomPower/synthetic_data/century_hier/century_hier.init.R
+# random
+#   seed = 898394
+# output
+#   file = /data/decomPower/synthetic_data/century_hier/century_hier3.csv
+#   diagnostic_file =  (Default)
+#   refresh = 100 (Default)
+lp__,accept_stat__,stepsize__,treedepth__,n_leapfrog__,divergent__,energy__,turnover.1,turnover.2,turnover.3,gamma.1,gamma.2,gamma.3,sigma.1,sigma.2,sigma.3,sigma_obs,A1.1.1,A1.2.1,A1.3.1,A1.4.1,A1.5.1,A1.1.2,A1.2.2,A1.3.2,A1.4.2,A1.5.2,A1.1.3,A1.2.3,A1.3.3,A1.4.3,A1.5.3,A2.1.1,A2.2.1,A2.3.1,A2.4.1,A2.5.1,A2.1.2,A2.2.2,A2.3.2,A2.4.2,A2.5.2,A2.1.3,A2.2.3,A2.3.3,A2.4.3,A2.5.3,A3.1.1,A3.2.1,A3.3.1,A3.4.1,A3.5.1,A3.1.2,A3.2.2,A3.3.2,A3.4.2,A3.5.2,A3.1.3,A3.2.3,A3.3.3,A3.4.3,A3.5.3,A1_g.1,A1_g.2,A1_g.3,A2_g.1,A2_g.2,A2_g.3,A3_g.1,A3_g.2,A3_g.3,kappa,k.1,k.2,k.3,CO2_meas.1.1,CO2_meas.2.1,CO2_meas.3.1,CO2_meas.4.1,CO2_meas.5.1,CO2_meas.6.1,CO2_meas.7.1,CO2_meas.8.1,CO2_meas.9.1,CO2_meas.10.1,CO2_meas.11.1,CO2_meas.12.1,CO2_meas.13.1,CO2_meas.14.1,CO2_meas.15.1,CO2_meas.16.1,CO2_meas.17.1,CO2_meas.18.1,CO2_meas.19.1,CO2_meas.20.1,CO2_meas.21.1,CO2_meas.1.2,CO2_meas.2.2,CO2_meas.3.2,CO2_meas.4.2,CO2_meas.5.2,CO2_meas.6.2,CO2_meas.7.2,CO2_meas.8.2,CO2_meas.9.2,CO2_meas.10.2,CO2_meas.11.2,CO2_meas.12.2,CO2_meas.13.2,CO2_meas.14.2,CO2_meas.15.2,CO2_meas.16.2,CO2_meas.17.2,CO2_meas.18.2,CO2_meas.19.2,CO2_meas.20.2,CO2_meas.21.2,CO2_meas.1.3,CO2_meas.2.3,CO2_meas.3.3,CO2_meas.4.3,CO2_meas.5.3,CO2_meas.6.3,CO2_meas.7.3,CO2_meas.8.3,CO2_meas.9.3,CO2_meas.10.3,CO2_meas.11.3,CO2_meas.12.3,CO2_meas.13.3,CO2_meas.14.3,CO2_meas.15.3,CO2_meas.16.3,CO2_meas.17.3,CO2_meas.18.3,CO2_meas.19.3,CO2_meas.20.3,CO2_meas.21.3,CO2_meas.1.4,CO2_meas.2.4,CO2_meas.3.4,CO2_meas.4.4,CO2_meas.5.4,CO2_meas.6.4,CO2_meas.7.4,CO2_meas.8.4,CO2_meas.9.4,CO2_meas.10.4,CO2_meas.11.4,CO2_meas.12.4,CO2_meas.13.4,CO2_meas.14.4,CO2_meas.15.4,CO2_meas.16.4,CO2_meas.17.4,CO2_meas.18.4,CO2_meas.19.4,CO2_meas.20.4,CO2_meas.21.4,CO2_meas.1.5,CO2_meas.2.5,CO2_meas.3.5,CO2_meas.4.5,CO2_meas.5.5,CO2_meas.6.5,CO2_meas.7.5,CO2_meas.8.5,CO2_meas.9.5,CO2_meas.10.5,CO2_meas.11.5,CO2_meas.12.5,CO2_meas.13.5,CO2_meas.14.5,CO2_meas.15.5,CO2_meas.16.5,CO2_meas.17.5,CO2_meas.18.5,CO2_meas.19.5,CO2_meas.20.5,CO2_meas.21.5,CO2_cap.1.1,CO2_cap.2.1,CO2_cap.3.1,CO2_cap.4.1,CO2_cap.5.1,CO2_cap.6.1,CO2_cap.7.1,CO2_cap.8.1,CO2_cap.9.1,CO2_cap.10.1,CO2_cap.11.1,CO2_cap.12.1,CO2_cap.13.1,CO2_cap.14.1,CO2_cap.15.1,CO2_cap.16.1,CO2_cap.17.1,CO2_cap.18.1,CO2_cap.19.1,CO2_cap.20.1,CO2_cap.21.1,CO2_cap.1.2,CO2_cap.2.2,CO2_cap.3.2,CO2_cap.4.2,CO2_cap.5.2,CO2_cap.6.2,CO2_cap.7.2,CO2_cap.8.2,CO2_cap.9.2,CO2_cap.10.2,CO2_cap.11.2,CO2_cap.12.2,CO2_cap.13.2,CO2_cap.14.2,CO2_cap.15.2,CO2_cap.16.2,CO2_cap.17.2,CO2_cap.18.2,CO2_cap.19.2,CO2_cap.20.2,CO2_cap.21.2,CO2_cap.1.3,CO2_cap.2.3,CO2_cap.3.3,CO2_cap.4.3,CO2_cap.5.3,CO2_cap.6.3,CO2_cap.7.3,CO2_cap.8.3,CO2_cap.9.3,CO2_cap.10.3,CO2_cap.11.3,CO2_cap.12.3,CO2_cap.13.3,CO2_cap.14.3,CO2_cap.15.3,CO2_cap.16.3,CO2_cap.17.3,CO2_cap.18.3,CO2_cap.19.3,CO2_cap.20.3,CO2_cap.21.3,CO2_cap.1.4,CO2_cap.2.4,CO2_cap.3.4,CO2_cap.4.4,CO2_cap.5.4,CO2_cap.6.4,CO2_cap.7.4,CO2_cap.8.4,CO2_cap.9.4,CO2_cap.10.4,CO2_cap.11.4,CO2_cap.12.4,CO2_cap.13.4,CO2_cap.14.4,CO2_cap.15.4,CO2_cap.16.4,CO2_cap.17.4,CO2_cap.18.4,CO2_cap.19.4,CO2_cap.20.4,CO2_cap.21.4,CO2_cap.1.5,CO2_cap.2.5,CO2_cap.3.5,CO2_cap.4.5,CO2_cap.5.5,CO2_cap.6.5,CO2_cap.7.5,CO2_cap.8.5,CO2_cap.9.5,CO2_cap.10.5,CO2_cap.11.5,CO2_cap.12.5,CO2_cap.13.5,CO2_cap.14.5,CO2_cap.15.5,CO2_cap.16.5,CO2_cap.17.5,CO2_cap.18.5,CO2_cap.19.5,CO2_cap.20.5,CO2_cap.21.5,CO2_flux_hat.1.1,CO2_flux_hat.2.1,CO2_flux_hat.3.1,CO2_flux_hat.4.1,CO2_flux_hat.5.1,CO2_flux_hat.6.1,CO2_flux_hat.7.1,CO2_flux_hat.8.1,CO2_flux_hat.9.1,CO2_flux_hat.10.1,CO2_flux_hat.11.1,CO2_flux_hat.12.1,CO2_flux_hat.13.1,CO2_flux_hat.14.1,CO2_flux_hat.15.1,CO2_flux_hat.16.1,CO2_flux_hat.17.1,CO2_flux_hat.18.1,CO2_flux_hat.19.1,CO2_flux_hat.20.1,CO2_flux_hat.21.1,CO2_flux_hat.1.2,CO2_flux_hat.2.2,CO2_flux_hat.3.2,CO2_flux_hat.4.2,CO2_flux_hat.5.2,CO2_flux_hat.6.2,CO2_flux_hat.7.2,CO2_flux_hat.8.2,CO2_flux_hat.9.2,CO2_flux_hat.10.2,CO2_flux_hat.11.2,CO2_flux_hat.12.2,CO2_flux_hat.13.2,CO2_flux_hat.14.2,CO2_flux_hat.15.2,CO2_flux_hat.16.2,CO2_flux_hat.17.2,CO2_flux_hat.18.2,CO2_flux_hat.19.2,CO2_flux_hat.20.2,CO2_flux_hat.21.2,CO2_flux_hat.1.3,CO2_flux_hat.2.3,CO2_flux_hat.3.3,CO2_flux_hat.4.3,CO2_flux_hat.5.3,CO2_flux_hat.6.3,CO2_flux_hat.7.3,CO2_flux_hat.8.3,CO2_flux_hat.9.3,CO2_flux_hat.10.3,CO2_flux_hat.11.3,CO2_flux_hat.12.3,CO2_flux_hat.13.3,CO2_flux_hat.14.3,CO2_flux_hat.15.3,CO2_flux_hat.16.3,CO2_flux_hat.17.3,CO2_flux_hat.18.3,CO2_flux_hat.19.3,CO2_flux_hat.20.3,CO2_flux_hat.21.3,CO2_flux_hat.1.4,CO2_flux_hat.2.4,CO2_flux_hat.3.4,CO2_flux_hat.4.4,CO2_flux_hat.5.4,CO2_flux_hat.6.4,CO2_flux_hat.7.4,CO2_flux_hat.8.4,CO2_flux_hat.9.4,CO2_flux_hat.10.4,CO2_flux_hat.11.4,CO2_flux_hat.12.4,CO2_flux_hat.13.4,CO2_flux_hat.14.4,CO2_flux_hat.15.4,CO2_flux_hat.16.4,CO2_flux_hat.17.4,CO2_flux_hat.18.4,CO2_flux_hat.19.4,CO2_flux_hat.20.4,CO2_flux_hat.21.4,CO2_flux_hat.1.5,CO2_flux_hat.2.5,CO2_flux_hat.3.5,CO2_flux_hat.4.5,CO2_flux_hat.5.5,CO2_flux_hat.6.5,CO2_flux_hat.7.5,CO2_flux_hat.8.5,CO2_flux_hat.9.5,CO2_flux_hat.10.5,CO2_flux_hat.11.5,CO2_flux_hat.12.5,CO2_flux_hat.13.5,CO2_flux_hat.14.5,CO2_flux_hat.15.5,CO2_flux_hat.16.5,CO2_flux_hat.17.5,CO2_flux_hat.18.5,CO2_flux_hat.19.5,CO2_flux_hat.20.5,CO2_flux_hat.21.5,a21.1,a21.2,a21.3,a21.4,a21.5,a31.1,a31.2,a31.3,a31.4,a31.5,a12.1,a12.2,a12.3,a12.4,a12.5,a32.1,a32.2,a32.3,a32.4,a32.5,a13.1,a13.2,a13.3,a13.4,a13.5

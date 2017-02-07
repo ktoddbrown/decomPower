@@ -100,8 +100,21 @@ transformed parameters {
 }
 
 model { 
-  // dummy likelyhood
-  sigma ~ normal(0, 1);
+  // priors 
+  turnover[1] ~ normal(1.5, 0.15 * sigma[1]);
+  turnover[2] ~ normal(25, 2.5 * sigma[2]);
+  turnover[3] ~ normal(1000, 100 * sigma[3]);
+  sigma ~ cauchy(0,1); 
+  sigma_obs ~ cauchy(0,.1);
+  kappa ~ normal(10,5);
+  for (i in 1:num_rep) {
+    A1[i] ~ dirichlet(kappa*A1_g);
+    A2[i] ~ dirichlet(kappa*A2_g);
+    A3[i] ~ dirichlet(kappa*A3_g);
+  }
+  
+  // likelihood     
+  to_vector(CO2_flux) ~ lognormal(to_vector(log(CO2_flux_hat)), sigma_obs);   
 }
 
 generated quantities {
