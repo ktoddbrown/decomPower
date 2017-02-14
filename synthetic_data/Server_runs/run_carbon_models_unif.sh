@@ -3,7 +3,7 @@
 # Directives
 #PBS -N power_analysis_Carbon
 #PBS -W group_list=yetistats
-#PBS -l nodes=1:ppn=2:v2,walltime=24:00:00,mem=8000mb
+#PBS -l nodes=1:ppn=4:v2,walltime=12:00:00,mem=8000mb
 #PBS -t 1-18
 #PBS -M n 
 #PBS -m abe

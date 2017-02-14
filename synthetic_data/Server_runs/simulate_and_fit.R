@@ -8,7 +8,7 @@ t_cap_all <-  head(t_meas_all, -1) + 0.85 * (tail(t_meas_all, -1) - head(t_meas_
 t_cap_all <- c(t_meas_all[1] - (t_meas_all[2] - t_cap_all[1]), t_cap_all)
 sm <- stan_model("century_hier_nonstiff.stan")
 downsample_set <- c(1,2,4,5,10,20,50)
-for (rep in 1:5) {
+for (rep in 1:3) {
   for (i in 1:length(downsample_set)) {
     i
     n_downsample <- downsample_set[i]

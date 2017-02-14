@@ -84,7 +84,8 @@ transformed data {
 } 
 parameters { 
   vector<lower=0>[3] turnover;  // turnover rates
-  simplex[3] gamma;             // partitioning coefficients (a simplex) 
+  simplex[3] gamma[num_rep];    // local partitioning coefficients (a simplex)
+  simplex[3] gamma_g;           // global partiotioning coefficient
   vector<lower=0>[3] sigma;     // turnover standard deviation 
   real<lower=0> sigma_obs;      // observation standard deviation
   simplex[3] A1[num_rep];       // output rates from pool 1 
@@ -93,7 +94,8 @@ parameters {
   simplex[3] A1_g;              // global values for rates
   simplex[3] A2_g;              // global values for rates
   simplex[3] A3_g;              // global values for rates
-  real<lower=1> kappa;
+  real<lower=1> kappa_A;
+  real<lower=1> kappa_gamma;
 } 
 transformed parameters { 
   vector<lower=0>[3] k;             // decomposition rates (1/turnover)
@@ -115,10 +117,10 @@ transformed parameters {
     a13[i] = A3[i, 1];
   }
   for (i in 1:num_rep) {
-    CO2_meas[,i] = evolved_CO2(N_t, t0, t_meas, gamma, totalC_t0, 
+    CO2_meas[,i] = evolved_CO2(N_t, t0, t_meas, gamma[i], totalC_t0, 
                          k, a21[i], a31[i], a12[i], a32[i], a13[i], 
                          x_r, x_i); 
-    CO2_cap[,i] = evolved_CO2(N_t, t0, t_cap, gamma, totalC_t0, 
+    CO2_cap[,i] = evolved_CO2(N_t, t0, t_cap, gamma[i], totalC_t0, 
                         k, a21[i], a31[i], a12[i], a32[i], a13[i], 
                         x_r, x_i);
     CO2_flux_hat[,i] = (CO2_meas[,i] - CO2_cap[,i])./(t_meas - t_cap);
@@ -131,11 +133,13 @@ model {
   turnover[3] ~ normal(1000, 100 * sigma[3]);
   sigma ~ cauchy(0,1); 
   sigma_obs ~ cauchy(0,.1);
-  kappa ~ normal(10,5);
+  kappa_gamma ~ normal(10,5);
+  kappa_A ~ normal(10,5);
   for (i in 1:num_rep) {
-    A1[i] ~ dirichlet(kappa*A1_g);
-    A2[i] ~ dirichlet(kappa*A2_g);
-    A3[i] ~ dirichlet(kappa*A3_g);
+    A1[i] ~ dirichlet(kappa_A*A1_g);
+    A2[i] ~ dirichlet(kappa_A*A2_g);
+    A3[i] ~ dirichlet(kappa_A*A3_g);
+    gamma[i] ~ dirichlet(kappa_gamma*gamma_g);
   }
   
   // likelihood     
