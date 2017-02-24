@@ -1,7 +1,6 @@
 .libPaths('/vega/stats/users/mk3971/rpackages/')
 library(rstan)
-set.seed(12345)
-num_rep <- 3
+num_rep <- 5
 t_meas_all <- c(seq(from=1/360, to=14/360, by=0.5/360), seq(from=15/360, to=30/360, by=1/360),
             seq(from=32/360, to=60/360, by=2/360), seq(from=67/360, to=360/360, by=7/360))
 t_cap_all <-  head(t_meas_all, -1) + 0.85 * (tail(t_meas_all, -1) - head(t_meas_all, -1))
